@@ -1,22 +1,73 @@
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  ImageBackground,
+  Platform,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  ViewStyle
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { scale } from '../lib/Size';
 
 export default function App() {
+  const [imageUri, setImageUri] = useState<string | null>(null);
+
+  const pickImage = async () => {
+    if (Platform.OS !== 'web') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Sorry, we need camera roll permissions to make this work!');
+        return;
+      }
+
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1
+      });
+
+      console.log(result);
+
+      if (!result.cancelled) {
+        setImageUri(result.uri);
+      }
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <TouchableOpacity>
-        <View style={styles.pictureWrapper}>
-          <Ionicons name="camera" size={scale(40)} color="black" />
-        </View>
+      <TouchableOpacity onPress={pickImage}>
+        <PictureView uri={imageUri}>
+          <Ionicons name="camera" size={scale(40)} color="white" />
+        </PictureView>
       </TouchableOpacity>
 
       <StatusBar style="auto" />
     </View>
   );
 }
+
+const PictureView: React.VFC<{
+  uri: string | null | undefined;
+  children?: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+}> = ({ uri, children, style }) =>
+  uri ? (
+    <ImageBackground
+      source={{ uri }}
+      style={[styles.pictureWrapper, style]}
+      imageStyle={{ borderRadius: 9999 }}>
+      {children}
+    </ImageBackground>
+  ) : (
+    <View style={[styles.pictureWrapper, style]}>{children}</View>
+  );
 
 const styles = StyleSheet.create({
   container: {
